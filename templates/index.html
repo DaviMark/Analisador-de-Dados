@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot - Análise de Funcionários</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #3a3f47, #7b7e85);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            box-shadow: 0 8px 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        #chat {
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+            margin: 0 10px;
+            position: relative;
+        }
+
+        .user-message, .bot-message {
+            padding: 12px 15px;
+            border-radius: 20px;
+            margin: 10px 0;
+            max-width: 75%;
+            animation: fadeIn 0.5s ease;
+            position: relative;
+        }
+
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .bot-message {
+            background-color: #28a745;
+            color: white;
+            align-self: flex-start;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .input-group {
+            margin: 0px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .input-group input {
+            border-radius: 30px 0 0 30px;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group button {
+            border-radius: 0 30px 30px 0;
+            background-color: #007bff;
+            border: none;
+            transition: background-color 0.3s;
+        }
+
+        .input-group button:hover {
+            background-color: #0056b3;
+        }
+
+        .typing-indicator {
+            display: none;
+            font-size: 0.9rem;
+            color: #ffffff;
+            margin: 10px 0;
+            align-self: flex-start;
+        }
+
+        .suggestions {
+            position: absolute;
+            bottom: 100%; /* Faz com que a caixa apareça logo acima do input */
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.9); /* Aumenta a transparência */
+            color: #000;
+            border-radius: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            transition: opacity 0.3s ease, transform 0.3s ease; /* Adiciona animação de transição */
+            opacity: 0.95;
+        }
+        
+        .suggestions ul {
+            list-style: none;
+            padding: 10px;
+            margin: 0;
+        }
+        
+        .suggestions ul li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .suggestions ul li:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestions ul li:hover {
+            background-color: #007bff;
+            color: #fff;
+        }        
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+            border-color: #007bff;
+        }
+
+        .chat-header:hover {
+            background-color: #0056b3;
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">ChatBot de Análise de Funcionários</div>
+        <div id="chat" class="mb-3 d-flex flex-column"></div>
+        <div class="typing-indicator" id="typing-indicator"><i class="fas fa-spinner fa-spin"></i> Digitando...</div>
+        <div class="input-group">
+            <div class="suggestions" id="suggestions"></div>
+            <input type="text" id="user-input" class="form-control" placeholder="Digite sua pergunta..." aria-label="Usuário">
+            <div class="input-group-append">
+                <button id="send-btn" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script>
+        document.getElementById("send-btn").addEventListener("click", sendMessage);
+        
+        // Adiciona evento para enviar mensagem ao pressionar a tecla Enter
+        document.getElementById("user-input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+                event.preventDefault(); // Impede a nova linha no campo de entrada
+            }
+        });
+
+        // Exibe uma mensagem de boas-vindas assim que o chatbot é carregado
+        window.onload = function() {
+            addMessage("bot", "Bem-vindo, eu sou Agent analista de dados! Como posso ajudar você?");
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById("user-input");
+            const userMessage = userInput.value;
+
+            if (userMessage.trim() === "") return;
+
+            addMessage("user", userMessage);
+            userInput.value = '';
+
+            document.getElementById("typing-indicator").style.display = 'block'; // Mostra indicador de digitação
+
+            // Simula tempo de resposta do bot
+            setTimeout(() => {
+                fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question: userMessage })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("typing-indicator").style.display = 'none'; // Oculta indicador de digitação
+                    addMessage("bot", data.answer);
+                })
+                .catch(error => {
+                    document.getElementById("typing-indicator").style.display = 'none'; // Oculta indicador de digitação em caso de erro
+                    console.error('Erro:', error);
+                });
+            }, 1000); // Simula 1 segundo para a resposta do bot
+        }
+
+        function addMessage(sender, message) {
+            const chat = document.getElementById("chat");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = sender === "user" ? "user-message" : "bot-message";
+            messageDiv.textContent = message;
+            chat.appendChild(messageDiv);
+            chat.scrollTop = chat.scrollHeight; // Rolagem automática
+        }
+
+        const suggestionsBox = document.getElementById("suggestions");
+        const input = document.getElementById("user-input");
+
+        input.addEventListener("input", function() {
+            const query = this.value.toLowerCase();
+            const suggestions = [
+                "Quantas linhas tem?",
+                "Quantas colunas tem?",
+                "Qual o estado civil dos funcionarios?",
+                "Qual o sexo dos funcionarios?",
+                "Quais sao as datas de contratos?",
+                "Quais sao as datas de demissoes?",
+                "Quais sao os salarios?",
+                "Quais os niveis dos funcionarios?",
+                "Quais as areas do funcionarios?",
+                "Quais sao as avaliacoes dos funcionarios?",
+                "Quais sao os beneficios?",
+                "Quais sao os VT?",
+                "Quais sao os VR?"
+            ];
+
+            const filteredSuggestions = suggestions.filter(suggestion => suggestion.toLowerCase().includes(query));
+
+            if (filteredSuggestions.length > 0) {
+                suggestionsBox.innerHTML = `<ul>${filteredSuggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}</ul>`;
+                suggestionsBox.style.display = "block";
+            } else {
+                suggestionsBox.style.display = "none";
+            }
+        });
+
+        suggestionsBox.addEventListener("click", function(event) {
+            if (event.target.tagName === "LI") {
+                input.value = event.target.textContent;
+                suggestionsBox.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
