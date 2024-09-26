@@ -3,23 +3,30 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# Carregar o arquivo Excel
 file_path = 'banco/BaseFuncionarios.xlsx'
-df = pd.read_excel(file_path)
+
 # Funções para responder às perguntas
+def carregar_dados():
+    return pd.read_excel(file_path)
+
 def contar_linhas():
+    df = carregar_dados()
     return len(df)
 
 def contar_colunas():
+    df = carregar_dados()
     return df.shape[1], df.columns.tolist()
 
 def estado_civil():
+    df = carregar_dados()
     return df['Estado_Civil'].value_counts().to_dict()
 
 def sexo():
+    df = carregar_dados()
     return df['Sexo'].value_counts().to_dict()
 
 def data_contrato():
+    df = carregar_dados()
     df['Data_de_contrato'] = pd.to_datetime(df['Data_de_contrato'])
     mais_curta = df.loc[df['Data_de_contrato'].idxmin()]
     mais_longa = df.loc[df['Data_de_contrato'].idxmax()]
@@ -32,11 +39,13 @@ def data_contrato():
     }
 
 def data_demissao():
+    df = carregar_dados()
     df['Data_de_demissao'] = pd.to_datetime(df['Data_de_demissao'])
     demissoes = df[['Nome_completo', 'Data_de_demissao']].dropna()
     return demissoes
 
 def salario_base():
+    df = carregar_dados()
     salario_max = df.loc[df['Salario_Base'].idxmax()]
     salario_min = df.loc[df['Salario_Base'].idxmin()]
     media = df['Salario_Base'].mean()
@@ -48,12 +57,15 @@ def salario_base():
     }
 
 def nivel():
+    df = carregar_dados()
     return df['Nível'].value_counts().to_dict()
 
 def area():
+    df = carregar_dados()
     return df['Área'].value_counts().to_dict()
 
 def avaliacao_funcionario():
+    df = carregar_dados()
     avaliacao_max = df.loc[df['Avaliação_do_Funcionario'].idxmax()]
     avaliacao_min = df.loc[df['Avaliação_do_Funcionario'].idxmin()]
     media = df['Avaliação_do_Funcionario'].mean()
@@ -63,38 +75,41 @@ def avaliacao_funcionario():
         "minima": (avaliacao_min['Nome_completo'], avaliacao_min['Avaliação_do_Funcionario']),
         "media": media
     }
+
 def beneficios():
+    df = carregar_dados()
     beneficio_max = df.loc[df['Beneficios'].idxmax()]
     beneficio_min = df.loc[df['Beneficios'].idxmin()]
-    
+
     return {
         "maximo": (beneficio_max['Nome_completo'], beneficio_max['Beneficios']),
         "minimo": (beneficio_min['Nome_completo'], beneficio_min['Beneficios'])
     }
 
 def vt():
+    df = carregar_dados()
     vt_max = df.loc[df['VT'].idxmax()]
     vt_min = df.loc[df['VT'].idxmin()]
-    
+
     return {
         "maximo": (vt_max['Nome_completo'], vt_max['VT']),
         "minimo": (vt_min['Nome_completo'], vt_min['VT'])
     }
 
 def vr():
+    df = carregar_dados()
     vr_max = df.loc[df['VR'].idxmax()]
     vr_min = df.loc[df['VR'].idxmin()]
-    
+
     return {
         "maximo": (vr_max['Nome_completo'], vr_max['VR']),
         "minimo": (vr_min['Nome_completo'], vr_min['VR'])
     }
-   
 
 # Função principal para receber perguntas
 def responder_pergunta(pergunta):
     pergunta = pergunta.lower()
-    
+
     if "quantas linhas tem" in pergunta:
         return f"O arquivo tem {contar_linhas()} linhas."
     elif "quantas colunas tem" in pergunta:
@@ -130,7 +145,6 @@ def responder_pergunta(pergunta):
         return (f"A avaliação do funcionário mais alta é de {avaliacoes['maxima'][0]}: {avaliacoes['maxima'][1]}. "
                 f"A avaliação do funcionário mais baixa é de {avaliacoes['minima'][0]}: {avaliacoes['minima'][1]}. "
                 f"A média das avaliações é {avaliacoes['media']:.2f}.")
-    # Novas perguntas para Benefícios, VT e VR
     elif "quais sao os beneficios" in pergunta:
         beneficios_info = beneficios()
         return (f"O maior benefício é de {beneficios_info['maximo'][0]}: R$ {beneficios_info['maximo'][1]:.2f}. "
